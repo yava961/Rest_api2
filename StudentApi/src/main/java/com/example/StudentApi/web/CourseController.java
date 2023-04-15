@@ -22,7 +22,7 @@ public class CourseController {
     public ResponseEntity<CourseDTO> createCourse(@RequestBody CourseDTO courseDTO) {
         try {
             CourseDTO createdCourse = courseService.createCourse(courseDTO);
-            return new ResponseEntity<>(createdCourse, HttpStatus.OK);
+            return new ResponseEntity<>(createdCourse, HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }

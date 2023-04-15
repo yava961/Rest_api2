@@ -23,7 +23,7 @@ public class StudentController {
     public ResponseEntity<StudentDTO> createStudent(@RequestBody StudentDTO studentDTO) {
         try {
             StudentDTO createdStudent = studentService.createStudent(studentDTO);
-            return new ResponseEntity<>(createdStudent, HttpStatus.OK);
+            return new ResponseEntity<>(createdStudent, HttpStatus.CREATED);
         } catch (Exception e) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }

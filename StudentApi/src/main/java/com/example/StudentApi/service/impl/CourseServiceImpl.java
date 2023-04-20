@@ -12,7 +12,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -35,18 +34,6 @@ public class CourseServiceImpl implements CourseService {
         return modelMapper.map(course, CourseDTO.class);
     }
 
-    @Override
-    public Course addStudentToCourse(Long courseId, Long studentId) {
-        Course course = courseRepo.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
-        Student student = studentRepo.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
-        List<Student> students = course.getStudents();
-        if (students == null) {
-            students = new ArrayList<>();
-        }
-        students.add(student);
-        course.setStudents(students);
-        return courseRepo.save(course);
-    }
 
     @Override
     public List<StudentDTO> getStudentsForCourse(Long courseId) {
@@ -59,16 +46,56 @@ public class CourseServiceImpl implements CourseService {
                 .collect(Collectors.toList());
     }
 
-    @Override
+    /*@Override
+    public Course addStudentToCourse(Long courseId, Long studentId) {
+        Course course = courseRepo.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
+        Student student = studentRepo.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
+        student.getCourses().add(course);
+        studentRepo.save(student);
+        return course;
+    }*/
+
+    /*@Override
     public Course removeStudentFromCourse(Long courseId, Long studentId) {
         Course course = courseRepo.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
         Student student = studentRepo.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
-        List<Student> students = course.getStudents();
-        if (students == null || students.isEmpty()) {
-            throw new NotFoundException("Student not found");
-        }
-        students.remove(student);
-        course.setStudents(students);
+        student.getCourses().remove(course);
+        studentRepo.save(student);
+        return course;
+    }*/
+
+    @Override
+    public Course addStudentToCourse(Long courseId, Long studentId) {
+        Course course = courseRepo.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
+        Student student = studentRepo.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
+        course.enrollStudent(student);
         return courseRepo.save(course);
     }
+
+    @Override
+    public Course removeStudentFromCourse(Long courseId, Long studentId) {
+        Course course = courseRepo.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
+        List<Student> students = course.getStudents();
+
+        if (students == null || students.isEmpty()) {
+            throw new NotFoundException("Student not found in the course");
+        }
+
+        Student targetStudent = students.stream()
+                .filter(student -> student.getId().equals(studentId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Student not found in the course"));
+
+        students.remove(targetStudent);
+        course.setStudents(students);
+        Course updatedCourse = courseRepo.save(course);
+
+        targetStudent.setCourses(targetStudent.getCourses().stream()
+                .filter(c -> !c.getId().equals(courseId))
+                .collect(Collectors.toList()));
+        studentRepo.save(targetStudent);
+
+        return updatedCourse;
+    }
+
 }

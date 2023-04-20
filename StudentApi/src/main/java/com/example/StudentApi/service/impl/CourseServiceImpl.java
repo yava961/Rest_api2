@@ -39,12 +39,8 @@ public class CourseServiceImpl implements CourseService {
     public Course addStudentToCourse(Long courseId, Long studentId) {
         Course course = courseRepo.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
         Student student = studentRepo.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
-        List<Student> students = course.getStudents();
-        if (students == null) {
-            students = new ArrayList<>();
-        }
-        students.add(student);
-        course.setStudents(students);
+
+        course.enrollStudent(student);
         return courseRepo.save(course);
     }
 
@@ -62,13 +58,27 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public Course removeStudentFromCourse(Long courseId, Long studentId) {
         Course course = courseRepo.findById(courseId).orElseThrow(() -> new NotFoundException("Course not found"));
-        Student student = studentRepo.findById(studentId).orElseThrow(() -> new NotFoundException("Student not found"));
         List<Student> students = course.getStudents();
+
         if (students == null || students.isEmpty()) {
-            throw new NotFoundException("Student not found");
+            throw new NotFoundException("Student not found in the course");
         }
-        students.remove(student);
+
+        Student targetStudent = students.stream()
+                .filter(student -> student.getId().equals(studentId))
+                .findFirst()
+                .orElseThrow(() -> new NotFoundException("Student not found in the course"));
+
+        students.remove(targetStudent);
         course.setStudents(students);
-        return courseRepo.save(course);
+        Course updatedCourse = courseRepo.save(course);
+
+        targetStudent.setCourses(targetStudent.getCourses().stream()
+                .filter(c -> !c.getId().equals(courseId))
+                .collect(Collectors.toList()));
+        studentRepo.save(targetStudent);
+
+        return updatedCourse;
     }
+
 }
